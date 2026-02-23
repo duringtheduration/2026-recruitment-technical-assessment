@@ -31,36 +31,6 @@ app = Flask(__name__)
 # Retrieved 2026-02-22, License - CC BY-SA 4.0
 app.json.sort_keys = False # <-- this line is pasted from stack overflow. function is to ensure task 3 returns the result preserving dict order
 
-# Store your recipes here!
-# cookbook = {
-#     "Skibidi Spaghetti": {
-#         "type": "recipe",
-#         "requiredItems": [
-#             {"name": "Meatball", "quantity": 3},
-#             {"name": "Pasta", "quantity": 1},
-#             {"name": "Tomato", "quantity": 2}
-#         ]
-#     },
-#     "Meatball": {
-#         "type": "recipe",
-#         "requiredItems": [
-#             {"name": "Beef", "quantity": 2},
-#             {"name": "Egg", "quantity": 1}
-#         ]
-#     },
-#     "Pasta": {
-#         "type": "recipe",
-#         "requiredItems": [
-#             {"name": "Flour", "quantity": 3},
-#             {"name": "Egg", "quantity": 1}
-#         ]
-#     },
-#     "Beef": {"type": "ingredient", "cookTime": 5},
-#     "Egg": {"type": "ingredient", "cookTime": 3},
-#     "Flour": {"type": "ingredient", "cookTime": 0},
-#     "Tomato": {"type": "ingredient", "cookTime": 2}
-# }
-
 cookbook = {}
 
 # Task 1 helper (don't touch)
@@ -83,8 +53,6 @@ def parse_handwriting(recipeName: str) -> Union[str , None]:
 	if len(recipeName) <= 0: #if string is all nonsense return none
 		return None
 	return recipeName
-
-print(parse_handwriting("*^&blah%"))
 
 # [TASK 2] ====================================================================
 # Endpoint that adds a CookbookEntry to your magical cookbook
@@ -121,52 +89,16 @@ def create_entry():
 
 		# pass ================================
 		cookbook[data.get('name')] = data
-		print('-=======================')
-		print(cookbook)
 		return '', 200 # logic defaults to success 
 	except: 
 		return 'you probably entered something wrong', 400
 
-cookbook = {} #autotester only works if cookbook is empty 
 
 # [TASK 3] ====================================================================
 # Endpoint that returns a summary of a recipe that corresponds to a query name
 @app.route('/summary', methods=['GET'])
 def summary():
 	
-	# cookbook = {
-    # "Skibidi Spaghetti": {
-    #     "type": "recipe",
-    #     "requiredItems": [
-    #         {"name": "Meatball", "quantity": 3},
-    #         {"name": "Pasta", "quantity": 1},
-    #         {"name": "Tomato", "quantity": 2}
-    #     ]
-    # },
-    # "Meatball": {
-    #     "type": "recipe",
-    #     "requiredItems": [
-    #         {"name": "Beef", "quantity": 2},
-    #         {"name": "Egg", "quantity": 1}
-    #     ]
-    # },
-    # "Pasta": {
-    #     "type": "recipe",
-    #     "requiredItems": [
-    #         {"name": "Flour", "quantity": 3},
-    #         {"name": "Egg", "quantity": 1}
-    #     ]
-    # },
-    # "Beef": {"type": "ingredient", "cookTime": 5},
-    # "Egg": {"type": "ingredient", "cookTime": 3},
-    # "Flour": {"type": "ingredient", "cookTime": 0},
-    # "Tomato": {"type": "ingredient", "cookTime": 2}
-	# }
-
-	# global cookbook
-	# cookbook.clear()
-	# cookbook = {} #autotester only works if cookbook is empty 
-
 	#initiate variables used later================================== 
 	cookTime = 0 
 	Ingredientslist = []
@@ -185,19 +117,14 @@ def summary():
 		# cooktime ======================================================== 
 		def getCookTime(name, quantity): # accept both name and quantity bc quantity is needed for later calculations
 
-			nonlocal cookTime 
-			print(cookbook[name])
-
+			nonlocal cookTime #needs to be nonlocal to modify it 
 			try: 
 				if cookbook[name]['type'] == 'ingredient': 
 					cookTime += cookbook[name]['cookTime'] * quantity # if ingredient, add it to cooktime immediately, multiplying for quantity 
-					print(cookTime)
 				elif cookbook[name]['type'] == 'recipe': #if recipe, see what logical layers are below it
 					requiredItemList = cookbook[name]['requiredItems'] 
-					print(requiredItemList)
 					for entry in requiredItemList: # for every ingredient or recipe in requireditems
 						requiredItemQuantity = entry['quantity']*quantity #ensure quantity is multiplied each time to count everything 
-						print(entry)
 						getCookTime(entry['name'], requiredItemQuantity) #recursion to reach the bottom most layer (eg. recipe to recipe to ingredients)
 				else: 
 					return 'invalid cookbook type', 400 #incase cookbook has an invalid entry somehow despite task 2
@@ -207,25 +134,19 @@ def summary():
 				return 'something went wrong. possibly recipe entered contains recipe or ingredients not in cookbook', 400
 		
 		getCookTime(name, 1) #call to calculate. default quantity on all summaries is 1
-		print(cookTime)
 
 		# ingredients list =====================================================
 		#first make a list of dict of all ingredients 
 		def getIngredientsList(name, quantity): # accept both name and quantity bc quantity is needed for later calculations
 
-			nonlocal Ingredientslist
-			print(cookbook[name])
+			nonlocal Ingredientslist 
 
 			if cookbook[name]['type'] == 'ingredient': 
 				# Ingredientslist.append(cookbook[name])
 				Ingredientslist.append({"name":name, "quantity":quantity})
-				print(cookTime)
 			elif cookbook[name]['type'] == 'recipe': #if recipe, see what logical layers are below it
-				print('wait')
 				requiredItemList = cookbook[name]['requiredItems'] 
-				print(requiredItemList)
 				for entry in requiredItemList: # for every ingredient or recipe in requireditems
-					print(entry)
 					requiredItemQuantity = entry['quantity']*quantity #ensure quantity is multiplied each time to count everything 
 					getIngredientsList(entry['name'], requiredItemQuantity) #recursion to reach the bottom most layer (eg. recipe to recipe to ingredients)
 			else: 
@@ -234,43 +155,29 @@ def summary():
 			return Ingredientslist
 		
 		getIngredientsList(name, 1) #call to calculate. quantity default is 1
-		print(Ingredientslist)
 
 		# then merge the duplicate items into one 
 		def mergeIngredientsList(Ingredientslist): 
 			num = 0 #need num for later
 			for entry in Ingredientslist: 
 				num += 1 
-				print (num) 
 				for entry2 in Ingredientslist[num:]: #num: means loop through ingredientslist but exclude the first item
 					if entry['name'] == entry2['name']: #so we can compare every item to each other once in ingredientslist
-						print(entry['name'])
-						print(entry2['name']) 
 						entry2['quantity'] += entry['quantity'] #where if items have duplicates, add all the quantity onto one item
 						Ingredientslist.remove(entry) #and delete the other item once quantity is added (moved)
-						print(Ingredientslist) 
-					else: 
-						print(entry['name'])
-						print(entry2['name']) 
 			return Ingredientslist
 		
 		mergeIngredientsList(Ingredientslist)
-		print(Ingredientslist)
 
-		# print(cookTime = getCookTime())
-		# cookTime = cookbook[name]
 		recipeSummary = {
 			"name": name, 
 			"cookTime": cookTime, 
 			"ingredients": Ingredientslist 
 
 		}
-		print("=====================")
-		print(cookbook)
-
+	
 	except: #catch here for either unexpected errors or ingredient/recipe not exist in cookbook
 		return 'something went wrong. possibly recipe entered contains recipe or ingredients not in cookbook', 400
-
 
 	return jsonify(recipeSummary), 200
 
